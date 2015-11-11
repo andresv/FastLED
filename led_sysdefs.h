@@ -16,6 +16,9 @@
 #include "platforms/arm/sam/led_sysdefs_arm_sam.h"
 #elif defined(STM32F10X_MD)
 #include "platforms/arm/stm32/led_sysdefs_arm_stm32.h"
+#elif defined(STM32CHIBIOS)
+#include "platforms/arm/stm32chibios/led_sysdefs_arm_stm32.h"
+#include "platforms/arm/stm32chibios/charduino.h"
 #elif defined(__SAMD21G18A__)
 #include "platforms/arm/d21/led_sysdefs_arm_d21.h"
 #elif defined(__XTENSA__)
