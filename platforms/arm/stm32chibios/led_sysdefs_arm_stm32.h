@@ -5,8 +5,9 @@
 
 #define FASTLED_ARM
 
-#define SPI_DATA 15
-#define SPI_CLOCK 13
+// Those pins are defined just to silence warnings
+#define SPI_DATA 0
+#define SPI_CLOCK 0
 #define HAS_HARDWARE_PIN_SUPPORT
 
 #ifndef INTERRUPT_THRESHOLD
