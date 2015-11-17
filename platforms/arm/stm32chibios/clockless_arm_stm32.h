@@ -15,7 +15,7 @@ static const SPIConfig spicfg = {
     NULL,
     GPIOC,
     4,
-    SPI_CR1_BR_0
+    SPI_CR1_BR_1
 };
 
 
@@ -23,12 +23,12 @@ static const SPIConfig spicfg = {
 
 // 100 LEDS
 // each LED has 3 bytes for RGB value
-// 2 SPI bytes for representing 1 bit (check m_one and m_zero buffers)
+// 1 SPI byte for representing 1 bit (check m_one and m_zero)
 // 8 bits in a byte
-// 1 byte is for 0x00 that is sent before actual LED data, otherwise first pulse is little bit longer for some strange reason
-static uint8_t m_dma_buffer[FASTLED_MAX_LED_NUMBER * 3 * 2 * 8 + 1];
-static uint8_t m_one[2];
-static uint8_t m_zero[2];
+// 2 bytes is for 0x00 that are sent before and after actual LED data to keep MOSI line low
+static uint8_t m_dma_buffer[FASTLED_MAX_LED_NUMBER * 3 * 1 * 8 + 2];
+static uint8_t m_one = 0xFC;
+static uint8_t m_zero = 0xC0;
 
 template <int DATA_PIN, int T1, int T2, int T3, EOrder RGB_ORDER = RGB, int XTRA0 = 0, bool FLIP = false, int WAIT_TIME = 50>
 class ClocklessController : public CLEDController {
@@ -43,28 +43,25 @@ public:
         // STM32_PLLP_VALUE 2
         // STM32_PLLQ_VALUE 7
         //
-        // In this case 1 bit in SPI MISO is 47.6 ns long.
+        // SPI_CR1_BR_1 set
+        // In this case 1 bit in SPI MOSI is 190 ns long.
+        //
         // This LED driver needs following timing according to this datasheet https://www.adafruit.com/datasheets/WS2812B.pdf:
         // 1 bit: 0.8 us HIGH and 0.45 us LOW = 1.25 us
         // 0 bit: 0.4 us HIGH and 0.85 us LOW = 1.25 us
-        // However it seems that this timing must not be very strict and following also works:
+        // However it seems that this timing must not be very strict and following also works (measured with Logic):
         // 1 bit: 0.96 us HIGH and 0.56 us LOW = 1.52 us
         // 0 bit: 0.36 us HIGH and 1.16 us LOW = 1.52 us
-        // Therefore we can represent this timing using 2 SPI bytes. Look m_one and m_zero.
-        // It means 2 bytes of data is sent out to MOSI to just represent one bit of RGB data for the LED driver.
-        // Total of 48 bytes of data is sent to MOSI pin to set RGB value for one LED (2SPI_BYTES * 8BITS_IN_BYTE * 3BYTES_FOR_RGB)
+        // Therefore we can represent this timing using 1 SPI byte. Look m_one and m_zero.
+        // It means 1 byte of data is sent out to MOSI to just represent one bit of RGB data for the LED driver.
+        // Total of 24 bytes of data is sent to MOSI pin to set RGB value for one LED (1SPI_BYTE * 8BITS_IN_BYTE * 3BYTES_FOR_RGB)
 
-        // fill first byte with 0x00 that is sent always before actually updating LED data
+        // first byte is filled with 0x00 that is sent always before actually updating LED data
         // this byte fixes a little glitch in timing that only happens with the first time
         // MOSI goes high before sending actual data
         m_dma_buffer[0] = 0x00;
 
         spiStart(&SPID2, &spicfg);
-        m_one[0] = 0xFF;
-        m_one[1] = 0xC0;
-
-        m_zero[0] = 0xF0;
-        m_zero[1] = 0x00;
     }
 
     virtual uint16_t getMaxRefreshRate() const {
@@ -106,15 +103,14 @@ protected:
     __attribute__ ((always_inline)) inline static uint32_t prepareDMABuffer(uint32_t offset, uint8_t b)  {
         for (int i=0; i<8; i++) {
             if (b & 0x80) {
-                memcpy(m_dma_buffer + 1 + offset, m_one, 2);
+                *(m_dma_buffer + 1 + offset) = m_one;
             }
             else {
-                memcpy(m_dma_buffer + 1 + offset, m_zero, 2);
+                *(m_dma_buffer + 1 + offset) = m_zero;
             }
 
             b = b << 1;
-
-            offset += 2;
+            offset += 1;
         }
 
         return offset;
@@ -148,8 +144,12 @@ protected:
 
         };
 
-        // write to SPI using DMA, +1 is first 0x00 byte
-        spiSend(&SPID2, buffer_len + 1, m_dma_buffer);
+        // set last byte to 0x00, otherwise MISO does not go low
+        m_dma_buffer[buffer_len] = 0x00;
+
+        // write to SPI using DMA
+        // +2 is first 0x00 byte and last 0x00 byte
+        spiSend(&SPID2, buffer_len + 2, m_dma_buffer);
     }
 };
 
