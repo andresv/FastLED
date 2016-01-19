@@ -18,6 +18,11 @@ static const SPIConfig spicfg = {
     SPI_CR1_BR_1
 };
 
+// hardcoded values
+#define GPIO1 1
+#define GPIO2 2
+#define GPIO3 3
+#define GPIO4 4
 
 #define FASTLED_MAX_LED_NUMBER 100
 
@@ -30,13 +35,12 @@ static uint8_t m_dma_buffer[FASTLED_MAX_LED_NUMBER * 3 * 1 * 8 + 2];
 static uint8_t m_one = 0xFC;
 static uint8_t m_zero = 0xC0;
 
-template <int DATA_PIN, int T1, int T2, int T3, EOrder RGB_ORDER = RGB, int XTRA0 = 0, bool FLIP = false, int WAIT_TIME = 50>
+template <int DATA_ENABLE_PIN, int T1, int T2, int T3, EOrder RGB_ORDER = RGB, int XTRA0 = 0, bool FLIP = false, int WAIT_TIME = 50>
 class ClocklessController : public CLEDController {
     CMinWait<WAIT_TIME> mWait;
 
 public:
     virtual void init() {
-
         // This works only if SYSCLK frequency is 168 MHz:
         // STM32_PLLM_VALUE 8
         // STM32_PLLN_VALUE 336
@@ -121,9 +125,30 @@ protected:
     static void showRGBInternal(PixelController<RGB_ORDER> & pixels) {
 
         uint32_t buffer_len = 0;
+        memset(m_dma_buffer, 0x00, sizeof(m_dma_buffer));
+
         // Setup the pixel controller and load/scale the first byte
         pixels.preStepFirstByteDithering();
         register uint8_t b = pixels.loadAndScale0();
+
+        // enable AND gate to mux SPI output to only one pin at the time
+        switch (DATA_ENABLE_PIN) {
+            case GPIO1:
+                palSetPad(GPIOB, 10);
+                break;
+
+            case GPIO2:
+                palSetPad(GPIOA, 12);
+                break;
+
+            case GPIO3:
+                palSetPad(GPIOB, 14);
+            break;
+
+            case GPIO4:
+                palSetPad(GPIOB, 15);
+            break;
+        }
 
         // prepare DMA buffer for SPI transfer
         while (pixels.has(1)) {
@@ -150,6 +175,24 @@ protected:
         // write to SPI using DMA
         // +2 is first 0x00 byte and last 0x00 byte
         spiSend(&SPID2, buffer_len + 2, m_dma_buffer);
+
+        switch (DATA_ENABLE_PIN) {
+            case GPIO1:
+                palClearPad(GPIOB, 10);
+                break;
+
+            case GPIO2:
+                palClearPad(GPIOA, 12);
+                break;
+
+            case GPIO3:
+                palClearPad(GPIOB, 14);
+            break;
+
+            case GPIO4:
+                palClearPad(GPIOB, 15);
+            break;
+        }
     }
 };
 
