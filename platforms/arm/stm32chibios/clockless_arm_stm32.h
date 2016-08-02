@@ -134,19 +134,19 @@ protected:
         // enable AND gate to mux SPI output to only one pin at the time
         switch (DATA_ENABLE_PIN) {
             case GPIO1:
-                palSetPad(GPIOB, 10);
+                palSetPad(GPIOC, 1);
                 break;
 
             case GPIO2:
-                palSetPad(GPIOA, 12);
+                palSetPad(GPIOC, 13);
                 break;
 
             case GPIO3:
-                palSetPad(GPIOB, 14);
+                palSetPad(GPIOC, 14);
             break;
 
             case GPIO4:
-                palSetPad(GPIOB, 15);
+                palSetPad(GPIOC, 15);
             break;
         }
 
@@ -178,19 +178,19 @@ protected:
 
         switch (DATA_ENABLE_PIN) {
             case GPIO1:
-                palClearPad(GPIOB, 10);
+                palClearPad(GPIOC, 1);
                 break;
 
             case GPIO2:
-                palClearPad(GPIOA, 12);
+                palClearPad(GPIOC, 13);
                 break;
 
             case GPIO3:
-                palClearPad(GPIOB, 14);
+                palClearPad(GPIOC, 14);
             break;
 
             case GPIO4:
-                palClearPad(GPIOB, 15);
+                palClearPad(GPIOC, 15);
             break;
         }
     }
