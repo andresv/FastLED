@@ -13,16 +13,11 @@ FASTLED_NAMESPACE_BEGIN
 // ChibiOS SPI config
 static const SPIConfig spicfg = {
     NULL,
-    GPIOC,
-    4,
-    SPI_CR1_BR_1
+    GPIOB,
+    0,
+    SPI_CR1_BR_1 | SPI_CR1_BR_0,
+    0
 };
-
-// hardcoded values
-#define GPIO1 1
-#define GPIO2 2
-#define GPIO3 3
-#define GPIO4 4
 
 #define FASTLED_MAX_LED_NUMBER 100
 
@@ -65,7 +60,7 @@ public:
         // MOSI goes high before sending actual data
         m_dma_buffer[0] = 0x00;
 
-        spiStart(&SPID2, &spicfg);
+        spiStart(&SPID1, &spicfg);
     }
 
     virtual uint16_t getMaxRefreshRate() const {
@@ -131,25 +126,6 @@ protected:
         pixels.preStepFirstByteDithering();
         register uint8_t b = pixels.loadAndScale0();
 
-        // enable AND gate to mux SPI output to only one pin at the time
-        switch (DATA_ENABLE_PIN) {
-            case GPIO1:
-                palSetPad(GPIOC, 1);
-                break;
-
-            case GPIO2:
-                palSetPad(GPIOC, 13);
-                break;
-
-            case GPIO3:
-                palSetPad(GPIOC, 14);
-            break;
-
-            case GPIO4:
-                palSetPad(GPIOC, 15);
-            break;
-        }
-
         // prepare DMA buffer for SPI transfer
         while (pixels.has(1)) {
             pixels.stepDithering();
@@ -174,25 +150,7 @@ protected:
 
         // write to SPI using DMA
         // +2 is first 0x00 byte and last 0x00 byte
-        spiSend(&SPID2, buffer_len + 2, m_dma_buffer);
-
-        switch (DATA_ENABLE_PIN) {
-            case GPIO1:
-                palClearPad(GPIOC, 1);
-                break;
-
-            case GPIO2:
-                palClearPad(GPIOC, 13);
-                break;
-
-            case GPIO3:
-                palClearPad(GPIOC, 14);
-            break;
-
-            case GPIO4:
-                palClearPad(GPIOC, 15);
-            break;
-        }
+        spiSend(&SPID1, buffer_len + 2, m_dma_buffer);
     }
 };
 
