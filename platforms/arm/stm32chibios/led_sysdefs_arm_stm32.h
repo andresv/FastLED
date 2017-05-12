@@ -3,7 +3,25 @@
 
 #include "stdio.h"
 
+#define FASTLED_TEENSY3
 #define FASTLED_ARM
+
+// Silence warnings
+#define QADD8_AVRASM 0
+#define QADD7_AVRASM 0
+#define QSUB8_AVRASM 0
+#define ADD8_AVRASM 0
+#define SUB8_AVRASM 0
+#define AVG8_AVRASM 0
+#define AVG7_AVRASM 0
+#define MUL8_AVRASM 0
+#define QMUL8_AVRASM 0
+#define ABS8_AVRASM 0
+#define SCALE8_AVRASM 0
+#define CLEANUP_R1_AVRASM 0
+#define SCALE16BY8_AVRASM 0
+#define SCALE16_AVRASM 0
+#define EASE8_AVRASM 0
 
 // Those pins are defined just to silence warnings
 #define SPI_DATA 0
