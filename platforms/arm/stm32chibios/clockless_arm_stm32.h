@@ -15,7 +15,8 @@ static const SPIConfig spicfg = {
     NULL,
     GPIOC,
     4,
-    SPI_CR1_BR_1
+    SPI_CR1_BR_1,
+    0
 };
 
 // hardcoded values
