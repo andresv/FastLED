@@ -146,7 +146,7 @@ protected:
         };
 
         // set last byte to 0x00, otherwise MISO does not go low
-        m_dma_buffer[buffer_len] = 0x00;
+        m_dma_buffer[buffer_len + 1] = 0x00;
 
         // write to SPI using DMA
         // +2 is first 0x00 byte and last 0x00 byte
